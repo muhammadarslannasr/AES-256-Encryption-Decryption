@@ -39,10 +39,7 @@ public class AES256EncryptionDecryptionActivity extends AppCompatActivity {
     Button btnencode;
     Button btndecode;
     TextView sample_text;
-    private static String Key = "your key";
-    String returnResult;
-    private static String secretKey = "boooooooooom!!!!";
-    private static String salt = "ssshhhhhhhhhhh!!!!";
+    static String plainText = "Muhammad Arslan Nasr";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,13 +47,49 @@ public class AES256EncryptionDecryptionActivity extends AppCompatActivity {
         btndecode = findViewById(R.id.btndecode);
         btnencode = findViewById(R.id.btnencode);
         sample_text = findViewById(R.id.sample_text);
+        sample_text.setText(plainText);
+        KeyGenerator keyGenerator = null;
+        try {
+            keyGenerator = KeyGenerator.getInstance("AES");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        assert keyGenerator != null;
+        keyGenerator.init(256);
+
+        // Generate Key
+        SecretKey key = keyGenerator.generateKey();
+
+        // Generating IV.
+        byte[] IV = new byte[16];
+        SecureRandom random = new SecureRandom();
+        random.nextBytes(IV);
+
+        System.out.println("Original Text  : "+plainText);
+
+//        byte[] cipherText = new byte[0];
+//        try {
+//            cipherText = encrypt(plainText.getBytes(),key, IV);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+        //System.out.println("Encrypted Text : "+Base64.getEncoder().encodeToString(cipherText));
+
+
+        //System.out.println("DeCrypted Text : "+decryptedText);
+
+        final byte[][] cipherText = {new byte[0]};
 
         btnencode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                returnResult = encryptString(Key);
-                sample_text.setText(returnResult);
+                try {
+                    cipherText[0] = encrypt(plainText.getBytes(),key, IV);
+                    sample_text.setText(cipherText[0].toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
             }
         });
@@ -64,45 +97,83 @@ public class AES256EncryptionDecryptionActivity extends AppCompatActivity {
         btndecode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 try {
-                    SecretKeySpec decryptedResult = getKey(returnResult);
-                    sample_text.setText(decryptedResult.toString());
-                } catch (UnsupportedEncodingException e) {
+                    String decryptedText = decrypt(cipherText[0],key, IV);
+                    sample_text.setText(decryptedText);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
+
             }
         });
     }
 
-    public static String encryptString(String stringToEncode) throws NullPointerException {
+//    public static String encryptString(String stringToEncode) throws NullPointerException {
+//
+//        try {
+//            SecretKeySpec skeySpec = getKey(Key);
+//            byte[] clearText = stringToEncode.getBytes("UTF8");
+//            final byte[] iv = new byte[16];
+//            Arrays.fill(iv, (byte) 0x00);
+//            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+//            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7Padding");
+//            cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivParameterSpec);
+//            String encrypedValue = Base64.encodeToString(cipher.doFinal(clearText), Base64.DEFAULT);
+//            return encrypedValue;
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        return "";
+//    }
+//
+//
+//    private static SecretKeySpec getKey(String password) throws UnsupportedEncodingException {
+//        int keyLength = 256;
+//        byte[] keyBytes = new byte[keyLength / 8];
+//        Arrays.fill(keyBytes, (byte) 0x0);
+//        byte[] passwordBytes = password.getBytes("UTF-8");
+//        int length = passwordBytes.length < keyBytes.length ? passwordBytes.length : keyBytes.length;
+//        System.arraycopy(passwordBytes, 0, keyBytes, 0, length);
+//        SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
+//        return key;
+//    }
 
-        try {
-            SecretKeySpec skeySpec = getKey(Key);
-            byte[] clearText = stringToEncode.getBytes("UTF8");
-            final byte[] iv = new byte[16];
-            Arrays.fill(iv, (byte) 0x00);
-            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivParameterSpec);
-            String encrypedValue = Base64.encodeToString(cipher.doFinal(clearText), Base64.DEFAULT);
-            return encrypedValue;
+    public static byte[] encrypt(byte[] plaintext, SecretKey key, byte[] IV) throws Exception {
+        //Get Cipher Instance
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
+        //Create SecretKeySpec
+        SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
+
+        //Create IvParameterSpec
+        IvParameterSpec ivSpec = new IvParameterSpec(IV);
+
+        //Initialize Cipher for ENCRYPT_MODE
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+
+        //Perform Encryption
+        byte[] cipherText = cipher.doFinal(plaintext);
+
+        return cipherText;
     }
 
+    public static String decrypt(byte[] cipherText, SecretKey key, byte[] IV) throws Exception {
+        //Get Cipher Instance
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
-    private static SecretKeySpec getKey(String password) throws UnsupportedEncodingException {
-        int keyLength = 256;
-        byte[] keyBytes = new byte[keyLength / 8];
-        Arrays.fill(keyBytes, (byte) 0x0);
-        byte[] passwordBytes = password.getBytes("UTF-8");
-        int length = passwordBytes.length < keyBytes.length ? passwordBytes.length : keyBytes.length;
-        System.arraycopy(passwordBytes, 0, keyBytes, 0, length);
-        SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
-        return key;
+        //Create SecretKeySpec
+        SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
+
+        //Create IvParameterSpec
+        IvParameterSpec ivSpec = new IvParameterSpec(IV);
+
+        //Initialize Cipher for DECRYPT_MODE
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+
+        //Perform Decryption
+        byte[] decryptedText = cipher.doFinal(cipherText);
+
+        return new String(decryptedText);
     }
 }
